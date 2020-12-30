@@ -21,7 +21,8 @@ int touchEnabled = false;
 
 #if defined(ARDUINO_CITILAB_ED1) || defined(ARDUINO_M5Stack_Core_ESP32) || \
 	defined(ARDUINO_M5Stick_C) || defined(ARDUINO_ESP8266_WEMOS_D1MINI) || \
-	defined(ARDUINO_NRF52840_CLUE) || defined(ARDUINO_IOT_BUS)
+	defined(ARDUINO_NRF52840_CLUE) || defined(ARDUINO_IOT_BUS) || \
+        defined ARDUINO_M5Core_Ink
 
 	#define TFT_BLACK 0
 	#define TFT_GREEN 0x7E0
@@ -108,6 +109,29 @@ int touchEnabled = false;
 			useTFT = true;
 		}
 
+	#elif defined(ARDUINO_M5Core_Ink)
+                #define ENABLE_GxEPD2_GFX 0
+                #include <GxEPD2_BW.h>
+                #include <GxEPD2_3C.h>
+                #include <GxEPD2_7C.h>
+                #include <Fonts/FreeMonoBold9pt7b.h>
+		#define TFT_CS	9
+		#define TFT_DC	15
+		#define TFT_RST	0
+		#define TFT_BSY	4
+		#define TFT_WIDTH 200
+		#define TFT_HEIGHT 200
+                GxEPD2_BW<GxEPD2_154_M09, GxEPD2_154_M09::HEIGHT> tft(GxEPD2_154_M09(9, 15, 0, 4));
+                void tftInit() {
+                    tft.init(115200);
+                    tft.setRotation(0);
+                    tft.setFont(&FreeMonoBold9pt7b);
+                    tft.setTextColor(GxEPD_BLACK);
+                    tft.setFullWindow();
+                    tft.firstPage();
+                    tftClear();
+                    useTFT = true;
+                }
 	#elif defined(ARDUINO_M5Stick_C)
 		// Preliminary: this is not yet working...
 		#include "Adafruit_GFX.h"
@@ -235,7 +259,11 @@ int touchEnabled = false;
 	#endif
 
 void tftClear() {
-	tft.fillScreen(TFT_BLACK);
+        #ifdef ARDUINO_M5Core_Ink
+            do { tft.fillScreen(GxEPD_WHITE); } while (tft.nextPage());
+        #else
+	    tft.fillScreen(TFT_BLACK);
+        #endif
 }
 
 OBJ primEnableDisplay(int argCount, OBJ *args) {
@@ -357,29 +385,34 @@ static OBJ primTriangle(int argCount, OBJ *args) {
 }
 
 static OBJ primText(int argCount, OBJ *args) {
-	OBJ value = args[0];
-	int x = obj2int(args[1]);
-	int y = obj2int(args[2]);
-	int color16b = color24to16b(obj2int(args[3]));
-	int scale = (argCount > 4) ? obj2int(args[4]) : 2;
-	int wrap = (argCount > 5) ? (trueObj == args[5]) : true;
-	tft.setCursor(x, y);
-	tft.setTextColor(color16b);
-	tft.setTextSize(scale);
-	tft.setTextWrap(wrap);
-
-	if (IS_TYPE(value, StringType)) {
-		tft.print(obj2str(value));
-	} else if (trueObj == value) {
-		tft.print("true");
-	} else if (falseObj == value) {
-		tft.print("false");
-	} else if (isInt(value)) {
-		char s[50];
-		sprintf(s, "%d", obj2int(value));
-		tft.print(s);
-	}
-	return falseObj;
+#ifdef ARDUINO_M5Core_Ink
+    do {
+#endif
+        OBJ value = args[0];
+        int x = obj2int(args[1]);
+        int y = obj2int(args[2]);
+        int color16b = color24to16b(obj2int(args[3]));
+        int scale = (argCount > 4) ? obj2int(args[4]) : 2;
+        int wrap = (argCount > 5) ? (trueObj == args[5]) : true;
+        tft.setTextColor(color16b);
+        tft.setTextSize(scale);
+        tft.setTextWrap(wrap);
+        tft.setCursor(x, y);
+        if (IS_TYPE(value, StringType)) {
+                tft.print(obj2str(value));
+        } else if (trueObj == value) {
+                tft.print("true");
+        } else if (falseObj == value) {
+                tft.print("false");
+        } else if (isInt(value)) {
+                char s[50];
+                sprintf(s, "%d", obj2int(value));
+                tft.print(s);
+        }
+#ifdef ARDUINO_M5Core_Ink
+    } while (tft.nextPage());
+#endif
+    return falseObj;
 }
 
 void tftSetHugePixel(int x, int y, int state) {

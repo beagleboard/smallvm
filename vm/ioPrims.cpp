@@ -86,7 +86,8 @@ void hardwareInit() {
 	#endif
 	#if defined(ARDUINO_CITILAB_ED1) || \
 		defined(ARDUINO_M5Stack_Core_ESP32) || defined(ARDUINO_M5Stick_C) || \
-		defined(ARDUINO_ESP8266_WEMOS_D1MINI) || defined(ARDUINO_NRF52840_CLUE)
+		defined(ARDUINO_ESP8266_WEMOS_D1MINI) || defined(ARDUINO_NRF52840_CLUE) || \
+                defined(ARDUINO_M5Core_Ink)
 			tftInit();
 	#endif
 }
