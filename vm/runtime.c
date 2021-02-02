@@ -96,6 +96,7 @@ void primsInit() {
 	addSensorPrims();
 	addTFTPrims();
 	addVarPrims();
+	addSerialPrims();
 }
 
 // Task Ops

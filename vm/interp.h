@@ -312,6 +312,7 @@ void addRadioPrims();
 void addSensorPrims();
 void addTFTPrims();
 void addVarPrims();
+void addSerialPrims();
 
 // Named Primitive Support
 

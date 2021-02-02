@@ -1,0 +1,11 @@
+module 'Serial Primitives' Comm
+author MicroBlocks
+version 1 0
+tags uart
+description 'Low level serial connectivity primitives.'
+
+	spec ' ' '[serial:serialOpen]'			'connect to second serial at _ bauds' 'num' 115200
+	spec ' ' '[serial:serialClose]'			'disconnect serial' ''
+	spec 'r' '[serial:serialReadByte]'		'read byte from serial'
+	spec ' ' '[serial:serialWriteByte]'		'write byte _ to serial' 'num' 1
+	spec ' ' '[serial:serialPrint]'			'write string _ to serial' 'str' 'Hello, outside World!'
