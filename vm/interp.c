@@ -325,7 +325,6 @@ static int functionNameMatches(int chunkIndex, char *functionName) {
 		if (!s) return false; // tab not found; should not happen
 		s += 1;
 	}
-
 	// return true if s begins with the given function name
 	return (strstr(s, functionName) == s);
 }
@@ -1174,28 +1173,49 @@ static void runTask(Task *task) {
 		if (arg > 0) {
 			OBJ params = *(sp - 1);
 			int calleeChunkIndex = -1;
+			int opCode = -1;
+
+			// look for a user defined function with that name
 			if ((arg == 1) && (IS_TYPE(*(sp - 1), StringType))) {
 				calleeChunkIndex = calleesChunkIndex(obj2str(*(sp - 1)));
 			} else if ((arg == 2) && (IS_TYPE(*(sp - 2), StringType))) {
 				calleeChunkIndex = calleesChunkIndex(obj2str(*(sp - 2)));
-			}
-			POP_ARGS_COMMAND();
-			if (calleeChunkIndex >= 0) {
-				int paramCount = 0;
-				if (arg == 2) { // has parameters
-					if (IS_TYPE(params, ListType)) { // list: push list contents onto stack
-						paramCount = (obj2int(FIELD(params, 0)) & 0xFF);
-						for (int i = 1; i <= paramCount; i++) {
-							*sp++ = FIELD(params, i);
-						}
-					} else { // non-list: push the single parameter onto stack
-						paramCount = 1;
-						*sp++ = params;
-					}
+
+			// user defined function not found; look for an opcode
+			} else if ((arg == 1) && (isInt(*(sp - 1)))) {
+				if ((obj2int(*(sp - 1))) < sizeof(jumpTable)) {
+					opCode = obj2int(*(sp - 1));
 				}
+			} else if ((arg == 2) && (isInt(*(sp - 2)))) {
+				if ((obj2int(*(sp - 2))) < sizeof(jumpTable)) {
+					opCode = obj2int(*(sp - 2));
+				}
+			}
+
+			POP_ARGS_COMMAND();
+
+			int paramCount = 0;
+			if (arg == 2) { // has parameters
+				if (IS_TYPE(params, ListType)) { // list: push list contents onto stack
+					paramCount = (obj2int(FIELD(params, 0)) & 0xFF);
+					for (int i = 1; i <= paramCount; i++) {
+						*sp++ = FIELD(params, i);
+					}
+				} else { // non-list: push the single parameter onto stack
+					paramCount = 1;
+					*sp++ = params;
+				}
+			}
+			if (calleeChunkIndex >= 0) {
 				// call the function
 				arg = (calleeChunkIndex << 8) | paramCount;
 				goto callFunction_op;
+			} else if (opCode >= 0) {
+				arg = paramCount;
+				goto *jumpTable[opCode];
+			} else {
+				// TODO push primitive set and name into stack before jumping
+				goto callReporterPrimitive_op;
 			}
 		}
 		// failed: bad arguments
